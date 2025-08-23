@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 #!/usr/bin/env python3
 import os
 
@@ -27,6 +26,3 @@ ProjectbcgCdkStack(app, "ProjectbcgCdkStack",
     )
 
 app.synth()
-=======
-hi
->>>>>>> 669e2e7a47cfc51ead037db5d9b364f194184008
