@@ -1,32 +1,35 @@
 import sys
 from awsglue.transforms import *
 from awsglue.utils import getResolvedOptions
+from pyspark.context import SparkContext
 from awsglue.context import GlueContext
 from awsglue.job import Job
-from pyspark.context import SparkContext
 
-args = getResolvedOptions(sys.argv, ['JOB_NAME'])
+# Glue boilerplate
+args = getResolvedOptions(sys.argv, ["JOB_NAME"])
 sc = SparkContext()
 glueContext = GlueContext(sc)
 spark = glueContext.spark_session
 job = Job(glueContext)
-job.init(args['JOB_NAME'], args)
+job.init(args["JOB_NAME"], args)
 
-# Read from raw S3
-datasource = glueContext.create_dynamic_frame.from_options(
-    "s3",
-    {"paths": ["s3://your-raw-bucket/"]},
+# Read data from curated bucket
+input_path = "s3://<YOUR-CURATED-BUCKET>/"
+df = glueContext.create_dynamic_frame.from_options(
+    connection_type="s3",
+    connection_options={"paths": [input_path]},
     format="json"
 )
 
-# Transform
-applymapping = ApplyMapping.apply(frame=datasource, mappings=[("field1","string","field1","string")])
+# Transform (basic example: drop nulls)
+df_clean = DropNullFields.apply(frame=df)
 
-# Write to curated bucket
+# Write output
+output_path = "s3://<YOUR-CURATED-BUCKET>/processed/"
 glueContext.write_dynamic_frame.from_options(
-    frame=applymapping,
+    frame=df_clean,
     connection_type="s3",
-    connection_options={"path": "s3://your-curated-bucket/"},
+    connection_options={"path": output_path},
     format="parquet"
 )
 

@@ -1,7 +1,17 @@
 #!/usr/bin/env python3
-from aws_cdk import App
-from cdk.pipeline_stack import PipelineStack  # import stack from /cdk folder
+import aws_cdk as cdk
+from cdk.pipeline_stack import PipelineStack
 
-app = App()
-PipelineStack(app, "PipelineStack")
+
+app = cdk.App()
+
+PipelineStack(
+    app,
+    "PipelineStack",
+    env=cdk.Environment(
+        account="681090449810",
+        region="eu-north-1"
+    ),
+)
+
 app.synth()
