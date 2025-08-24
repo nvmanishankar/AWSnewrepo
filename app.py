@@ -1,32 +1,7 @@
-<<<<<<< HEAD
 #!/usr/bin/env python3
-import os
+from aws_cdk import App
+from cdk.pipeline_stack import PipelineStack  # import stack from /cdk folder
 
-import aws_cdk as cdk
-
-from projectbcg_cdk.projectbcg_cdk_stack import ProjectbcgCdkStack
-
-
-app = cdk.App()
-ProjectbcgCdkStack(app, "ProjectbcgCdkStack",
-    # If you don't specify 'env', this stack will be environment-agnostic.
-    # Account/Region-dependent features and context lookups will not work,
-    # but a single synthesized template can be deployed anywhere.
-
-    # Uncomment the next line to specialize this stack for the AWS Account
-    # and Region that are implied by the current CLI configuration.
-
-    #env=cdk.Environment(account=os.getenv('CDK_DEFAULT_ACCOUNT'), region=os.getenv('CDK_DEFAULT_REGION')),
-
-    # Uncomment the next line if you know exactly what Account and Region you
-    # want to deploy the stack to. */
-
-    #env=cdk.Environment(account='123456789012', region='us-east-1'),
-
-    # For more information, see https://docs.aws.amazon.com/cdk/latest/guide/environments.html
-    )
-
+app = App()
+PipelineStack(app, "PipelineStack")
 app.synth()
-=======
-hi
->>>>>>> 669e2e7a47cfc51ead037db5d9b364f194184008
