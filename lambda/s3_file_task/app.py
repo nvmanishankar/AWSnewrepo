@@ -1,18 +1,20 @@
 import boto3
 import os
 
-s3 = boto3.client("s3")
-curated_bucket = os.environ["CURATED_BUCKET"]
+s3 = boto3.client('s3')
 
 def lambda_handler(event, context):
     print("Event:", event)
+    source_bucket = event['Records'][0]['s3']['bucket']['name']
+    file_key = event['Records'][0]['s3']['object']['key']
+    target_bucket = os.environ.get('CURATED_BUCKET')
 
-    bucket_name = event["detail"]["requestParameters"]["bucketName"]
-    key = event["detail"]["requestParameters"]["key"]
+    if not target_bucket:
+        target_bucket = source_bucket.replace("raw", "curated")
 
-    # Move file Raw → Curated
-    copy_source = {"Bucket": bucket_name, "Key": key}
-    s3.copy_object(Bucket=curated_bucket, Key=key, CopySource=copy_source)
-    s3.delete_object(Bucket=bucket_name, Key=key)
+    copy_source = {'Bucket': source_bucket, 'Key': file_key}
 
-    return {"status": "success", "file": key}
+    s3.copy_object(CopySource=copy_source, Bucket=target_bucket, Key=file_key)
+    print(f"File {file_key} moved from {source_bucket} → {target_bucket}")
+
+    return {"status": "success", "file": file_key}

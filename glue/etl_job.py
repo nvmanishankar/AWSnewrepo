@@ -1,36 +1,33 @@
-import sys
-from awsglue.transforms import *
-from awsglue.utils import getResolvedOptions
-from pyspark.context import SparkContext
-from awsglue.context import GlueContext
-from awsglue.job import Job
-
-# Glue boilerplate
-args = getResolvedOptions(sys.argv, ["JOB_NAME"])
-sc = SparkContext()
-glueContext = GlueContext(sc)
-spark = glueContext.spark_session
-job = Job(glueContext)
-job.init(args["JOB_NAME"], args)
-
-# Read data from curated bucket
-input_path = "s3://<YOUR-CURATED-BUCKET>/"
-df = glueContext.create_dynamic_frame.from_options(
-    connection_type="s3",
-    connection_options={"paths": [input_path]},
-    format="json"
+from aws_cdk import (
+    # ... existing imports
+    aws_glue as glue,
 )
 
-# Transform (basic example: drop nulls)
-df_clean = DropNullFields.apply(frame=df)
+# ... earlier code ...
 
-# Write output
-output_path = "s3://<YOUR-CURATED-BUCKET>/processed/"
-glueContext.write_dynamic_frame.from_options(
-    frame=df_clean,
-    connection_type="s3",
-    connection_options={"path": output_path},
-    format="parquet"
+# IAM Role for Glue already created as glue_role
+
+glue_job = glue.CfnJob(
+    self,
+    "GlueETLJob",
+    name="GlueETLJob-oOHNNIurJy4O",  # keep the same name or omit to let CDK name it
+    role=glue_role.role_arn,
+    glue_version="4.0",  # modern Glue (Spark 3.x, Python 3)
+    command=glue.CfnJob.JobCommandProperty(
+        name="glueetl",
+        python_version="3",
+        script_location=f"s3://{raw_bucket.bucket_name}/scripts/glue_job.py",
+    ),
+    default_arguments={
+        "--job-language": "python",
+        "--enable-metrics": "true",
+        # optional: "--enable-continuous-cloudwatch-log": "true",
+    },
+    worker_type="G.1X",         # use workers instead of max_capacity
+    number_of_workers=2,        # e.g. 2 DPUs
+    execution_property=glue.CfnJob.ExecutionPropertyProperty(
+        max_concurrent_runs=1
+    ),
+    max_retries=1,
+    description="CSV to Parquet from raw/input to curated/output",
 )
-
-job.commit()
