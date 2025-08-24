@@ -1,33 +1,40 @@
-from aws_cdk import (
-    # ... existing imports
-    aws_glue as glue,
+import sys
+from awsglue.utils import getResolvedOptions
+from pyspark.sql import SparkSession
+
+args = getResolvedOptions(sys.argv, ["RAW_BUCKET", "CURATED_BUCKET"])
+RAW_BUCKET = args["RAW_BUCKET"]
+CURATED_BUCKET = args["CURATED_BUCKET"]
+
+# Optional (when triggered via Lambda)
+INPUT_KEY = None
+if "--INPUT_KEY" in sys.argv:
+    idx = sys.argv.index("--INPUT_KEY") + 1
+    if idx < len(sys.argv):
+        INPUT_KEY = sys.argv[idx]
+
+spark = SparkSession.builder.getOrCreate()
+
+if INPUT_KEY:
+    input_path = f"s3://{RAW_BUCKET}/{INPUT_KEY}"
+else:
+    input_path = f"s3://{RAW_BUCKET}/input/"
+
+output_path = f"s3://{CURATED_BUCKET}/output/"
+
+print(f"Reading CSV from: {input_path}")
+df = (
+    spark.read
+    .option("header", "true")
+    .option("inferSchema", "true")
+    .csv(input_path)
 )
 
-# ... earlier code ...
-
-# IAM Role for Glue already created as glue_role
-
-glue_job = glue.CfnJob(
-    self,
-    "GlueETLJob",
-    name="GlueETLJob-oOHNNIurJy4O",  # keep the same name or omit to let CDK name it
-    role=glue_role.role_arn,
-    glue_version="4.0",  # modern Glue (Spark 3.x, Python 3)
-    command=glue.CfnJob.JobCommandProperty(
-        name="glueetl",
-        python_version="3",
-        script_location=f"s3://{raw_bucket.bucket_name}/scripts/glue_job.py",
-    ),
-    default_arguments={
-        "--job-language": "python",
-        "--enable-metrics": "true",
-        # optional: "--enable-continuous-cloudwatch-log": "true",
-    },
-    worker_type="G.1X",         # use workers instead of max_capacity
-    number_of_workers=2,        # e.g. 2 DPUs
-    execution_property=glue.CfnJob.ExecutionPropertyProperty(
-        max_concurrent_runs=1
-    ),
-    max_retries=1,
-    description="CSV to Parquet from raw/input to curated/output",
+print(f"Writing Parquet to: {output_path}")
+(
+    df.coalesce(1)
+    .write.mode("overwrite")
+    .parquet(output_path)
 )
+
+print("Done.")
