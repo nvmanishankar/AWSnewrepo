@@ -23,7 +23,7 @@ class PipelineStack(Stack):
         curated_bucket = s3.Bucket(self, "CuratedBucket")
 
         # ------------------------------------------------------------------
-        # Upload the Glue script to RAW bucket under scripts/
+        # Uploaded the Glue script to RAW bucket under scripts/
         # Local file: glue/etl_job.py  ->  s3://raw/scripts/etl_job.py
         # ------------------------------------------------------------------
         s3deploy.BucketDeployment(
@@ -50,7 +50,7 @@ class PipelineStack(Stack):
         curated_bucket.grant_read_write(glue_role)
 
         # ------------------------------------------------------------------
-        # Glue Job (named exactly "GlueETLJob")
+        # Glue Job 
         # ------------------------------------------------------------------
         glue_job = glue.CfnJob(
             self,
@@ -90,7 +90,7 @@ class PipelineStack(Stack):
         lambda_role.add_to_policy(
             iam.PolicyStatement(
                 actions=["glue:StartJobRun"],
-                resources=["*"],  # you can tighten to the specific job ARN later
+                resources=["*"],  
             )
         )
 
@@ -111,7 +111,7 @@ class PipelineStack(Stack):
             },
             timeout=Duration.seconds(60),
         )
-        # make sure Glue Job is created before Lambda may try to call it
+        # Glue Job is created before Lambda may try to call it
         lambda_fn.node.add_dependency(glue_job)
 
         # S3 -> Lambda notification for uploads under input/
